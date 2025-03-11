@@ -60,11 +60,6 @@ public class GroupClient : NCache
         }
     }
 
-    public bool AddWithTags(string key, object value, List<string> tags)
-    {
-        return false;
-    }
-
     public IDictionary<string, string> GetAllGroupData(string groupName, bool logAllData = false)
     {
         log.Debug($"Retreving items from cache: {_cacheName} of group: {groupName}");
