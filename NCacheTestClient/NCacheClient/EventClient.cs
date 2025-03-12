@@ -9,7 +9,9 @@ using Alachisoft.NCache.Config.Dom;
 using Alachisoft.NCache.Runtime.Caching;
 using Alachisoft.NCache.Runtime.Events;
 
-
+/// <summary>
+/// Testing Events and Notifications of NCache
+/// </summary>
 class EventClient : NCache
 {
     public EventClient(string ip, int port, string cacheName) : base(ip, port, cacheName)
@@ -27,6 +29,27 @@ class EventClient : NCache
         RegisterAllEvents();
         DummyAddInsertRemove();
         RegisterCallbackOnItem("KumailKey");
+    }
+
+    public void RegisterAllManagementEvents()
+    {
+        // Register cache cleared event
+        // OnCacheCleared callback will be triggered on cache clear event
+        cache.NotificationService.CacheCleared += OnCacheCleared;
+
+        // Register cache stopped event
+        // OnCacheStopped callback will be triggered when cache is stopped
+        cache.NotificationService.CacheStopped += OnCacheStopped;
+
+
+        // Register memebr join event
+        // OnMemeberJoined callback will be triggered when a new member joins cache
+        // cache.NotificationService.MemberJoined += OnMemberJoined;
+
+
+        // Register memebr left event
+        // OnMemeberleft callback will be triggered when a member leaves cache
+        // cache.NotificationService.MemberLeft += OnMemberLeft;
     }
 
     public void RegisterAllEvents()
@@ -123,6 +146,26 @@ class EventClient : NCache
     {
         // Handle cache data modification event
         log.Debug($"Cache item with key '{key}' has been modified. Event Type: {args.EventType}");
+    }
+
+    private void OnCacheCleared()
+    {
+        log.Debug($"Cache cleared event triggered on cache: {_cacheName}");
+    }
+
+    private void OnCacheStopped(string cacheName)
+    {
+        log.Debug($"Cache stopped event triggered on cache: {cacheName}");
+    }
+
+    private void OnMemberJoined(NodeInfo nodeInfo)
+    {
+        log.Debug($"Member joined with ip:port {nodeInfo.IpAddress}:{nodeInfo.Port} event triggered on cache: {_cacheName}");
+    }
+
+    private void OnMemberLeft(NodeInfo nodeInfo)
+    {
+        log.Debug($"Member left with ip:port {nodeInfo.IpAddress}:{nodeInfo.Port} event triggered on cache: {_cacheName}");
     }
 }
 

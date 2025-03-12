@@ -1,6 +1,7 @@
 namespace NCacheClient;
 
 using Alachisoft.NCache.Client;
+using Alachisoft.NCache.Common.DataPersistence;
 using Alachisoft.NCache.Runtime.Caching;
 
 public class TagClient : NCache
@@ -62,26 +63,101 @@ public class TagClient : NCache
         }
     }
 
-    public void GetAllTagData(string tag, bool printData)
+
+    public bool AddWIthNamedTags(string key, object value)
     {
         try
         {
-            CacheItem[] cacheItems = cache.GetByTag(tag);
-            if (cacheItems != null && cacheItems.Length > 0)
-            {
-                foreach (CacheItem cacheItem in cacheItems)
+            Subscriber sub = new Subscriber() { Msisdn = value.ToString(), Id = 11111 };
+            CacheItem cacheItem = new CacheItem(sub);
+
+            // Creating a Named Tags Dictionary
+            var namedTags = new NamedTagsDictionary();
+
+            // Adding Named Tags to the Dictionary
+            // Where keys are the names of the tags as string type and Values are of primitive type
+            namedTags.Add("Age", 25);
+
+            // Setting the named tag property of the cacheItem
+            cacheItem.NamedTags = namedTags;
+
+            cache.Add(key, cacheItem);
+            log.Debug($"Item {key} added successfully with namedTags");
+            return true;
+        }
+        catch (Exception ex)
+        {
+            log.Error($"Error inserting item {key} with namedTaga {ex.Message}");
+            return false;
+        }
+    }
+    public ICollection<string> GetAllKeysByTag(string tagName, bool printData)
+    {
+        try
+        {
+            log.Debug($"Getting keys with tag {tagName} through wildcard search");
+            ICollection<string> keys = cache.SearchService.GetKeysByTag(tagName);
+            if (printData)
+                foreach (var key in keys)
                 {
-                    log.Debug($"Key: {cacheItem.Key}, Value: {cacheItem.Value}");
+                    log.Debug($"Key: {key}");
                 }
-            }
-            else
-            {
-                log.Debug($"No items found with tag {tag}");
-            }
+
+            log.Debug($"Getting keys with tag {tagName} through Tag search");
+            Tag[] tag = new Tag[1];
+            tag.Append(new Tag(tagName));
+            keys = cache.SearchService.GetKeysByTag(tag[0]);
+            if (printData)
+                foreach (var key in keys)
+                {
+                    log.Debug($"Key: {key}");
+                }
+            return keys;
+        }
+        catch (Exception ex)
+        {
+            log.Error($"Error getting keys with tag {tagName}: {ex.Message}");
+            return null;
+        }
+    }
+
+    public ICollection<string> GetAllKeysByTags(string[] tagsName, bool printData)
+    {
+        Tag[] tags = new Tag[tagsName.Count()];
+        foreach (string t in tagsName)
+        {
+            tags.Append(new Tag(t));
+        }
+        TagSearchOptions tagSearchOptions = new TagSearchOptions();
+        //tagSearchOptions.
+        ICollection<string> keys = cache.SearchService.GetKeysByTags(tags, tagSearchOptions);
+        foreach (var key in keys)
+        {
+            log.Debug($"Key: {key}");
+        }
+        return keys;
+    }
+
+    public IDictionary<string, Subscriber> GetAllTagData(string tag, bool printData)
+    {
+        try
+        {
+            TagSearchOptions tagSearchOptions = new TagSearchOptions();
+            tagSearchOptions.CompareTo(tag);
+            Tag[] tags = new Tag[1];
+            tags.Append(new Tag(tag));
+            IDictionary<string, Subscriber> cacheData = cache.SearchService.GetByTags<Subscriber>(tags, tagSearchOptions);
+            if (printData)
+                foreach (var (k, v) in cacheData)
+                {
+                    log.Debug($"Key: {k}, Value: {v}");
+                }
+            return cacheData;
         }
         catch (Exception ex)
         {
             log.Error($"Error getting items with tag {tag}: {ex.Message}");
+            return null;
         }
     }
 }

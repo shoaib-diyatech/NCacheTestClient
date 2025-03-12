@@ -57,16 +57,17 @@ Console.WriteLine($"serverIps: [{string.Join(", ", serverIps)}]");
 Console.WriteLine($"serverPort: [{serverPort}]");
 
 // string CacheName = "EventsCluster";
-string CacheName = "SKOnly";
+// string CacheName = "SKOnly";
+string CacheName = "TestMirrorCache";
 
 Console.WriteLine($"Cache: [{CacheName}]");
 
 // NCache nCacheClient = new EventClient(serverIps, port, CacheName);
 // NCache nCacheClient = new BulkClient(serverIps, port, CacheName)
-// NCache nCacheClient = new PubSubClient(serverIps, port, CacheName);
+NCache nCacheClient = new PubSubClient(serverIps, port, CacheName);
 // NCache nCacheClient = new PartitionClient(serverIps, port, CacheName);
 // NCache nCacheClient = new LockingClient(serverIps, port, CacheName);
-NCache nCacheClient = new GroupClient(serverIps, port, CacheName);
+// NCache nCacheClient = new GroupClient(serverIps, port, CacheName);
 
 nCacheClient.Initialize();
 nCacheClient.Test();

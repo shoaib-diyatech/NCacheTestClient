@@ -5,6 +5,11 @@ using Newtonsoft.Json;
 //[Serializable]
 public class Subscriber
 {
+    public string Name { get; set; }
+    public string Category { get; set; }
+
+    public Gender gender { get; set; }
+    public string Email { get; set; }
     public string Msisdn { get; set; }
     //public ServiceType ServiceType { get; set; }
     public long Id { get; set; }
@@ -35,4 +40,9 @@ public enum ServiceType
 {
     Postpaid,
     Prepaid
+}
+
+public enum Gender{
+    Male,
+    Female
 }

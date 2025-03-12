@@ -15,19 +15,45 @@ public class PubSubClient : NCache
 
     public override void Test()
     {
-        string topicName = "OC";
-        CreateTopic(topicName);
-        SubscribeTopic(topicName);
-        PublishOnTopic(topicName, "Hello World");
+        string subTopicName = "OC";
+        string pubTopicName = "RamadanKareemBro33333333333333";
+        CreateTopic(pubTopicName);
+        SubscribeTopic(subTopicName);
+        long messageId = long.MinValue;
+        log.Debug($"Publishing messages on topic: {pubTopicName} cache: {_cacheName}");
+        while (true)
+        {
+            try
+            {
+                PublishOnTopic(pubTopicName, $"{++messageId} Hello World!");
+                if (messageId <= long.MaxValue)
+                {
+                    break;
+                }
+                System.Threading.Thread.Sleep(5000);
+                
+            }
+            catch (Exception ex)
+            {
+                log.Error($"Error publishing message: {ex.Message}");
+            }
+        }
     }
 
     public void CreateTopic(string topicName)
     {
         try
         {
-            // Create the topic
-            ITopic topic = cache.MessagingService.CreateTopic(topicName);
-            log.Debug($"Topic created: {topicName}, on cache: {_cacheName}");
+            if (cache.MessagingService.GetTopic(topicName) != null)
+            {
+                log.Debug($"Topic already exists: {topicName}, on cache: {_cacheName}");
+            }
+            else
+            {
+                // Create the topic
+                ITopic topic = cache.MessagingService.CreateTopic(topicName);
+                log.Debug($"Topic created: {topicName}, on cache: {_cacheName}");
+            }
         }
         catch (Exception ex)
         {
@@ -59,10 +85,11 @@ public class PubSubClient : NCache
             // Publish the order with delivery option set as all
             // and register message delivery failure
             orderTopic.Publish(orderMessage, DeliveryOption.All, true);
+            log.Debug($"Published message: {message} on topic: {topicName} cache: {_cacheName}");
         }
         else
         {
-            // No topic exists
+            log.Error($"Topic not found: {topicName}, on cache: {_cacheName}");
         }
     }
 
@@ -77,6 +104,7 @@ public class PubSubClient : NCache
             // Create and register subscribers for order topic
             // Message received callback is specified
             ITopicSubscription subscription = topic.CreateSubscription(messageReceivedCallback);
+            log.Debug($"Subscribed topic: {topicName}, on cache: {_cacheName}");
         }
     }
 
@@ -92,6 +120,6 @@ public class PubSubClient : NCache
 
     private void OnFailureMessageReceived(object sender, MessageFailedEventArgs args)
     {
-        log.Error($"Message delivery failed: {args.Message}, sender: {sender}");
+        log.Error($"Message delivery failed: {args.Message}, topic: {args.Topic} sender: {sender}, cache: {_cacheName}");
     }
 }
