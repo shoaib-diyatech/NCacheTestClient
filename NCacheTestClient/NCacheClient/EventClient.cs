@@ -16,40 +16,49 @@ class EventClient : NCache
 {
     public EventClient(string ip, int port, string cacheName) : base(ip, port, cacheName)
     {
-
+        RegisterAllEvents();
+        RegisterAllManagementEvents();
     }
 
     public EventClient(List<string> ips, int port, string cacheName) : base(ips, port, cacheName)
     {
-
+        RegisterAllEvents();
+        RegisterAllManagementEvents();
     }
 
     public override void Test()
     {
-        RegisterAllEvents();
         DummyAddInsertRemove();
         RegisterCallbackOnItem("KumailKey");
     }
 
     public void RegisterAllManagementEvents()
     {
-        // Register cache cleared event
-        // OnCacheCleared callback will be triggered on cache clear event
-        cache.NotificationService.CacheCleared += OnCacheCleared;
+        try
+        {
+            // Register cache cleared event
+            // OnCacheCleared callback will be triggered on cache clear event
+            cache.NotificationService.CacheCleared += OnCacheCleared;
 
-        // Register cache stopped event
-        // OnCacheStopped callback will be triggered when cache is stopped
-        cache.NotificationService.CacheStopped += OnCacheStopped;
-
-
-        // Register memebr join event
-        // OnMemeberJoined callback will be triggered when a new member joins cache
-        // cache.NotificationService.MemberJoined += OnMemberJoined;
+            // Register cache stopped event
+            // OnCacheStopped callback will be triggered when cache is stopped
+            cache.NotificationService.CacheStopped += OnCacheStopped;
 
 
-        // Register memebr left event
-        // OnMemeberleft callback will be triggered when a member leaves cache
-        // cache.NotificationService.MemberLeft += OnMemberLeft;
+            // Register memebr join event
+            // OnMemeberJoined callback will be triggered when a new member joins cache
+            cache.NotificationService.MemberJoined += OnMemberJoined;
+
+
+            // Register memebr left event
+            // OnMemeberleft callback will be triggered when a member leaves cache
+            cache.NotificationService.MemberLeft += OnMemberLeft;
+            log.Debug($"All management events registered successfully on cache: {cache}");
+        }
+        catch (Exception e)
+        {
+            log.Error($"Failed to register all management events on cache: {cache}, error: {e.Message}");
+        }
     }
 
     public void RegisterAllEvents()

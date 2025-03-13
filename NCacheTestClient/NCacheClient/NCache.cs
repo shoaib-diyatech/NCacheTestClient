@@ -1,10 +1,8 @@
-using Alachisoft.NCache.Caching.CacheSynchronization;
-using Alachisoft.NCache.Client;
-
 namespace NCacheClient;
 
-using Alachisoft.NCache.Caching;
+using Alachisoft.NCache.Caching.CacheSynchronization;
 using Alachisoft.NCache.Client;
+using Alachisoft.NCache.Caching;
 using Alachisoft.NCache.Common.Monitoring;
 using Alachisoft.NCache.Common.Util;
 using Alachisoft.NCache.Config.Dom;
@@ -103,13 +101,13 @@ public abstract class NCache
         return true;
     }
 
-    protected CacheItemVersion AddCacheItem(string key, string value)
+    protected CacheItemVersion AddCacheItem(string key, object value)
     {
         try
         {
             CacheItem cacheItem = new CacheItem(value);
             CacheItemVersion cacheItemVersion = cache.Add(key, cacheItem);
-            Console.WriteLine($"Added, key:{key}, value: {value}");
+            log.Debug($"Added, key: [{key}], value: [{value}], to cache: {_cacheName}");
             return cacheItemVersion;
         }
         catch (Exception ex)
@@ -148,20 +146,18 @@ public abstract class NCache
     {
         if (!isConnected)
         {
-            Console.WriteLine("Cache is not connected");
+            log.Error("Cache is not connected");
             return false;
         }
         try
         {
-            var value = cache.Get<string>(key);
-
-            log.Debug($"Value retreived: {value}");
+            var value = cache.Get<object>(key);
+            log.Debug($"Value retreived: [{value}]");
             return value;
         }
         catch (Exception e)
         {
-            Console.WriteLine("Error getting from cache: " + e.Message);
-            log.Error("Error getting from cache: ", e);
+            log.Error($"Error getting from cache {e.Message}");
             return null;
         }
     }
@@ -178,19 +174,18 @@ public abstract class NCache
         {
             if (cache.Remove<string>(key, out var valueRemoved))
             {
-                log.Debug($"Value removed: {valueRemoved}");
+                log.Debug($"Item removed: {valueRemoved}");
                 return valueRemoved;
             }
             else
             {
-                log.Debug($"Value not found: {key}");
+                log.Debug($"Item not found against key: {key}");
                 return null;
             }
         }
         catch (Exception e)
         {
-            Console.WriteLine("Error removing from cache: " + e.Message);
-            log.Error("Error removing from cache: ", e);
+            log.Error($"Error removing from cache: {e.Message} against key: {key}");
             return null;
         }
     }

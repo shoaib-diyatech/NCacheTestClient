@@ -3,6 +3,7 @@ namespace NCacheClient;
 using Alachisoft.NCache.Client;
 using Alachisoft.NCache.Common.DataPersistence;
 using Alachisoft.NCache.Runtime.Caching;
+using Alachisoft.NCache.Runtime.Exceptions;
 
 public class TagClient : NCache
 {
@@ -12,6 +13,12 @@ public class TagClient : NCache
 
     public TagClient(List<string> ips, int port, string cacheName) : base(ips, port, cacheName)
     {
+    }
+
+    public enum SubscriberTags{
+        ISB,
+        KHI,
+        LHR,
     }
 
     public override void Test()
@@ -28,9 +35,9 @@ public class TagClient : NCache
         string tv5 = "tv5";
         string tag1 = "T1";
         string tag2 = "T2";
-        string[] tags1 = new string[] { "a", "b" };
-        string[] tags2 = new string[] { "b", "c" };
-        string[] tags3 = new string[] { "c", "a" };
+        string[] tags1 = new string[] { SubscriberTags.ISB.ToString(), SubscriberTags.KHI.ToString() };
+        string[] tags2 = new string[] { SubscriberTags.KHI.ToString(), SubscriberTags.LHR.ToString() };
+        string[] tags3 = new string[] { SubscriberTags.LHR.ToString(), SubscriberTags.ISB.ToString() };
         AddWithTags(tk1, tv1, tags1);
         AddWithTags(tk2, tv2, tags1);
         AddWithTags(tk3, tv3, tags2);
@@ -38,18 +45,24 @@ public class TagClient : NCache
         AddWithTags(tk5, tv5, tags3);
         GetAllTagData(tag1, true);
         GetAllTagData(tag2, true);
+
+        AddWIthNamedTags();
+        AddWIthNamedTags();
+        AddWIthNamedTags();
+        SearchNamedTagsWithOQL("Age", 10);
+
     }
 
     public bool AddWithTags(string key, object value, string[] tag)
     {
         try
         {
-            Subscriber sub = new Subscriber() { Msisdn = value.ToString(), Id = 11111 };
-            CacheItem cacheItem = new CacheItem(sub);
+            Subscriber sub = Subscriber.GetRandomSubscriber();
+            CacheItem cacheItem = new CacheItem(Subscriber.Serialize(sub));
             Tag[] tags = new Tag[tag.Count()];
-            foreach (string t in tag)
+            for (int i = 0; i < tags.Count(); i++)
             {
-                tags.Append(new Tag(t));
+                tags[i] = new Tag(tag[i]);
             }
             cacheItem.Tags = tags;
             cache.Add(key, cacheItem);
@@ -64,25 +77,27 @@ public class TagClient : NCache
     }
 
 
-    public bool AddWIthNamedTags(string key, object value)
+    public bool AddWIthNamedTags()
     {
+        string key = "";
         try
         {
-            Subscriber sub = new Subscriber() { Msisdn = value.ToString(), Id = 11111 };
-            CacheItem cacheItem = new CacheItem(sub);
+            Subscriber sub = Subscriber.GetRandomSubscriber();
+            key = sub.Id.ToString();
+            CacheItem cacheItem = new CacheItem(Subscriber.Serialize(sub));
 
             // Creating a Named Tags Dictionary
             var namedTags = new NamedTagsDictionary();
 
             // Adding Named Tags to the Dictionary
             // Where keys are the names of the tags as string type and Values are of primitive type
-            namedTags.Add("Age", 25);
+            namedTags.Add("Age", sub.GetAge());
 
             // Setting the named tag property of the cacheItem
             cacheItem.NamedTags = namedTags;
 
             cache.Add(key, cacheItem);
-            log.Debug($"Item {key} added successfully with namedTags");
+            log.Debug($"Item {key} added successfully with namedTags, Age: {sub.GetAge()}");
             return true;
         }
         catch (Exception ex)
@@ -160,4 +175,41 @@ public class TagClient : NCache
             return null;
         }
     }
+
+    public void SearchNamedTagsWithOQL(string tagName, int value)
+    {
+        try
+        {
+            // Define the SQL query with a parameter placeholder
+            string query = $"SELECT Email FROM NCacheClient.Subscriber WHERE {tagName} > {value}";
+            log.Debug($"Executing Query: {query}");
+
+            // Create a QueryCommand and add the parameter value
+            var queryCommand = new QueryCommand(query);
+            // queryCommand.Parameters.Add(tagName, value);
+
+            // Execute the query
+            ICacheReader reader = cache.SearchService.ExecuteReader(queryCommand);
+            int fieldCount = reader.FieldCount;
+            if (fieldCount == 0)
+            {
+                log.Error($"No items found with {tagName} > {value}");
+                return;
+            }
+
+            // Iterate through the results
+            while (reader.Read())
+            {
+                Subscriber item = reader.GetValue<Subscriber>(0);
+                // Process the retrieved item
+            }
+        }
+        catch (OperationFailedException ex)
+        {
+            // Handle exceptions
+            log.Error($"Error: {ex.Message}");
+        }
+
+    }
+
 }

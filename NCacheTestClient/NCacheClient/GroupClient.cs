@@ -7,6 +7,13 @@ public class Car
     public string Name { get; set; }
     public string Category { get; set; }
 }
+
+public enum Group
+{
+    HighRPU,
+    LowRPU,
+    VIP
+}
 public class GroupClient : NCache
 {
     public GroupClient(string ip, int port, string cacheName) : base(ip, port, cacheName)
@@ -28,26 +35,62 @@ public class GroupClient : NCache
         string vg4 = "vg4";
         string gk5 = "gk5";
         string vg5 = "vg5";
-        string group1 = "G1";
-        string group2 = "G2";
-        AddWithGroup(gk1, vg1, group1);
-        AddWithGroup(gk2, vg2, group1);
-        AddWithGroup(gk3, vg3, group1);
-        AddWithGroup(gk4, vg4, group2);
-        AddWithGroup(gk5, vg5, group2);
-        GetAllGroupData(group1, true);
-        GetAllGroupData(group2, true);
+        string HighRPU = Group.HighRPU.ToString();
+        string VIP = Group.VIP.ToString();
+        string LowRPU = Group.LowRPU.ToString();
+
+        AddWithGroup(gk1, vg1, HighRPU);
+        AddWithGroup(gk2, vg2, HighRPU);
+        AddWithGroup(gk3, vg3, HighRPU);
+        AddWithGroup(gk4, vg4, LowRPU);
+        AddWithGroup(gk5, vg5, LowRPU);
+        AddWithGroup(gk5, vg5, LowRPU);
+        AddWithGroup(gk5, vg5, VIP);
+        AddWithGroup(gk5, vg5, VIP);
+        AddWithGroup(gk5, vg5, VIP);
+        //GetAllGroupData(HighRPU, true);
+        //GetAllGroupData(VIP, true);
+        SearchWithOQL(HighRPU, true);
+        SearchWithOQL(VIP, true);
+    }
+
+    public void SearchWithOQL(string groupName, bool logAllData = false)
+    {
+        string groupPlaceHodler = "$Group$";
+        string queryWithoutGroup = $"SELECT Email FROM NCacheClient.Subscriber";
+        string query = $"SELECT Email FROM NCacheClient.Subscriber WHERE {groupPlaceHodler} = ?";
+        // Use QueryCommand for query execution
+        var queryCommand = new QueryCommand(queryWithoutGroup);
+        // queryCommand.Parameters.Add(groupPlaceHodler, groupName);
+
+        // Executing the Query
+        ICacheReader reader = cache.SearchService.ExecuteReader(queryCommand);
+        // Read results if the result set is not empty
+        if (reader.FieldCount > 0)
+        {
+            // Iterate through the results
+            while (reader.Read())
+            {
+                Subscriber item = reader.GetValue<Subscriber>(0);
+                if (logAllData)
+                    log.Debug($"Subscriber: {item}");
+            }
+        }
+        else
+        {
+            log.Error($"No items found with GROUP: {groupName}");
+        }
     }
 
     public bool AddWithGroup(string key, object value, string group)
     {
         try
         {
-            // Car sub = new Car(){ Name = "+123456789"  };
-            Subscriber sub = new Subscriber() { Msisdn = "+123456789", Id = 11111 };
+            //Car sub = new Car(){ Name = "+123456789" };
+            Subscriber sub = Subscriber.GetRandomSubscriber();
             CacheItem cacheItem = new CacheItem(Subscriber.Serialize(sub));
 
-            //CacheItem cacheItem = new CacheItem(value);
+            //CacheItem cacheItem = new CacheItem(sub);
             cacheItem.Group = group;
             cache.Add(key, cacheItem);
             log.Debug($"Item {key} added successfully with group {group}");

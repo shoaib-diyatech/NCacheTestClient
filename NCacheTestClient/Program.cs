@@ -20,6 +20,7 @@ XmlConfigurator.Configure(logRepository, new FileInfo("log4net.config"));
 #endregion
 
 // Build configuration
+#region Build configuration
 var configuration = new ConfigurationBuilder()
     .SetBasePath(Directory.GetCurrentDirectory())
     .AddJsonFile("appsettings.json", optional: false, reloadOnChange: true)
@@ -35,7 +36,7 @@ var someSetting = configuration["SomeSetting"];
 var serverIP = configuration["NCacheServerSettings:ServerIP"];
 var serverPort = configuration["NCacheServerSettings:ServerPort"];
 var nCacheServerSettings = serviceProvider.GetService<IOptions<NCacheServerSettings>>().Value;
-
+#endregion
 
 int port = int.Parse(serverPort);
 
@@ -57,17 +58,19 @@ Console.WriteLine($"serverIps: [{string.Join(", ", serverIps)}]");
 Console.WriteLine($"serverPort: [{serverPort}]");
 
 // string CacheName = "EventsCluster";
-// string CacheName = "SKOnly";
-string CacheName = "TestMirrorCache";
+string CacheName = "SKOnly";
+// string CacheName = "TestMirrorCache";
 
 Console.WriteLine($"Cache: [{CacheName}]");
 
-// NCache nCacheClient = new EventClient(serverIps, port, CacheName);
+//NCache nCacheEventClient = new EventClient(serverIps, port, CacheName); // Just registering the events
 // NCache nCacheClient = new BulkClient(serverIps, port, CacheName)
-NCache nCacheClient = new PubSubClient(serverIps, port, CacheName);
+//NCache nCacheClient = new PubSubClient(serverIps, port, CacheName);
 // NCache nCacheClient = new PartitionClient(serverIps, port, CacheName);
 // NCache nCacheClient = new LockingClient(serverIps, port, CacheName);
 // NCache nCacheClient = new GroupClient(serverIps, port, CacheName);
+// NCache nCacheClient = new TagClient(serverIps, port, CacheName);
+NCache nCacheClient = new DependencyClient(serverIps, port, CacheName);
 
 nCacheClient.Initialize();
 nCacheClient.Test();

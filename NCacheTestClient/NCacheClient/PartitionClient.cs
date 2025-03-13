@@ -7,12 +7,21 @@ public class PartitionClient : NCache
     {
     }
 
-    long id = long.MinValue;
-    string keyPrefix = "P1";
+    long id = 0;//long.MinValue;
+    string keyPrefix = "";
+    int delayInMs = 0;
+    int ttlInSecs = 5;
 
     public override void Test()
     {
+        //cache.Clear();
+        // AddWIthExpiry();
         LoadTest();
+    }
+
+    public void AddWIthExpiry()
+    {
+        Add(keyPrefix + ++id, keyPrefix + id, ttlInSecs);
     }
 
     public void LoadTest()
@@ -21,7 +30,7 @@ public class PartitionClient : NCache
         {
             while (true)
             {
-                Add(keyPrefix + ++id, keyPrefix + id, 5);
+                Add(keyPrefix + ++id, keyPrefix + id, ttlInSecs);
 
             }
         });
@@ -29,7 +38,7 @@ public class PartitionClient : NCache
         {
             while (true)
             {
-                Add(keyPrefix + ++id, keyPrefix + id, 5);
+                Add(keyPrefix + ++id, keyPrefix + id, ttlInSecs);
 
             }
         });
@@ -37,7 +46,7 @@ public class PartitionClient : NCache
         {
             while (true)
             {
-                Add(keyPrefix + ++id, keyPrefix + id, 5);
+                Add(keyPrefix + ++id, keyPrefix + id, ttlInSecs);
 
             }
         });
@@ -45,7 +54,7 @@ public class PartitionClient : NCache
         {
             while (true)
             {
-                Add(keyPrefix + ++id, keyPrefix + id, 5);
+                Add(keyPrefix + ++id, keyPrefix + id, ttlInSecs);
 
             }
         });
