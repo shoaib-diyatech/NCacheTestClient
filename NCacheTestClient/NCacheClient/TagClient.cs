@@ -43,12 +43,13 @@ public class TagClient : NCache
         AddWithTags(tk3, tv3, tags2);
         AddWithTags(tk4, tv4, tags2);
         AddWithTags(tk5, tv5, tags3);
-        GetAllTagData(tag1, true);
-        GetAllTagData(tag2, true);
+        GetAllTagData(SubscriberTags.ISB.ToString(), true);
+        GetAllTagData(SubscriberTags.LHR.ToString(), true);
 
         AddWIthNamedTags();
         AddWIthNamedTags();
         AddWIthNamedTags();
+        SearchOneTagWithSQL(SubscriberTags.ISB.ToString());
         SearchNamedTagsWithOQL("Age", 10);
 
     }
@@ -65,6 +66,7 @@ public class TagClient : NCache
                 tags[i] = new Tag(tag[i]);
             }
             cacheItem.Tags = tags;
+            key = sub.Msisdn;
             cache.Add(key, cacheItem);
             log.Debug($"Item {key} added successfully with tags:  {String.Join(" ", tag)}");
             return true;
@@ -153,18 +155,17 @@ public class TagClient : NCache
         return keys;
     }
 
-    public IDictionary<string, Subscriber> GetAllTagData(string tag, bool printData)
+    public IDictionary<string, string> GetAllTagData(string tag, bool printData)
     {
         try
         {
-            TagSearchOptions tagSearchOptions = new TagSearchOptions();
-            tagSearchOptions.CompareTo(tag);
             Tag[] tags = new Tag[1];
-            tags.Append(new Tag(tag));
-            IDictionary<string, Subscriber> cacheData = cache.SearchService.GetByTags<Subscriber>(tags, tagSearchOptions);
+            tags[0] = new Tag(tag);
+            IDictionary<string, string> cacheData = cache.SearchService.GetByTags<string>(tags, TagSearchOptions.ByAllTags);
             if (printData)
                 foreach (var (k, v) in cacheData)
                 {
+                    Subscriber sub = Subscriber.Parse(v);
                     log.Debug($"Key: {k}, Value: {v}");
                 }
             return cacheData;
@@ -176,6 +177,41 @@ public class TagClient : NCache
         }
     }
 
+    public void SearchOneTagWithSQL(string tagName)
+    {
+        try
+        {
+            // Define the SQL query with a parameter placeholder
+            string tagPlaceHolder = "$Tag$";
+            string query = $"SELECT Email FROM NCacheClient.Subscriber WHERE {tagPlaceHolder} = ?";
+            log.Debug($"Executing Query: {query}");
+
+            // Create a QueryCommand and add the parameter value
+            var queryCommand = new QueryCommand(query);
+             queryCommand.Parameters.Add(tagPlaceHolder, tagName);
+
+            // Execute the query
+            ICacheReader reader = cache.SearchService.ExecuteReader(queryCommand);
+            int fieldCount = reader.FieldCount;
+            if (fieldCount == 0)
+            {
+                log.Error($"No items found with Tag = {tagName}");
+                return;
+            }
+
+            // Iterate through the results
+            while (reader.Read())
+            {
+                Subscriber item = reader.GetValue<Subscriber>(0);
+                // Process the retrieved item
+            }
+        }
+        catch (OperationFailedException ex)
+        {
+            // Handle exceptions
+            log.Error($"Error: {ex.Message}");
+        }
+    }
     public void SearchNamedTagsWithOQL(string tagName, int value)
     {
         try

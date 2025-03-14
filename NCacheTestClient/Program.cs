@@ -68,9 +68,9 @@ Console.WriteLine($"Cache: [{CacheName}]");
 //NCache nCacheClient = new PubSubClient(serverIps, port, CacheName);
 // NCache nCacheClient = new PartitionClient(serverIps, port, CacheName);
 // NCache nCacheClient = new LockingClient(serverIps, port, CacheName);
-// NCache nCacheClient = new GroupClient(serverIps, port, CacheName);
-// NCache nCacheClient = new TagClient(serverIps, port, CacheName);
-NCache nCacheClient = new DependencyClient(serverIps, port, CacheName);
+ //NCache nCacheClient = new GroupClient(serverIps, port, CacheName);
+ NCache nCacheClient = new TagClient(serverIps, port, CacheName);
+//NCache nCacheClient = new DependencyClient(serverIps, port, CacheName);
 
 nCacheClient.Initialize();
 nCacheClient.Test();

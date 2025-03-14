@@ -61,7 +61,7 @@ public class GroupClient : NCache
         string query = $"SELECT Email FROM NCacheClient.Subscriber WHERE {groupPlaceHodler} = ?";
         // Use QueryCommand for query execution
         var queryCommand = new QueryCommand(queryWithoutGroup);
-        // queryCommand.Parameters.Add(groupPlaceHodler, groupName);
+         queryCommand.Parameters.Add(groupPlaceHodler, groupName);
 
         // Executing the Query
         ICacheReader reader = cache.SearchService.ExecuteReader(queryCommand);
@@ -84,14 +84,16 @@ public class GroupClient : NCache
 
     public bool AddWithGroup(string key, object value, string group)
     {
+        key = "";
         try
         {
             //Car sub = new Car(){ Name = "+123456789" };
             Subscriber sub = Subscriber.GetRandomSubscriber();
             CacheItem cacheItem = new CacheItem(Subscriber.Serialize(sub));
-
+            
             //CacheItem cacheItem = new CacheItem(sub);
             cacheItem.Group = group;
+            key = sub.Msisdn;
             cache.Add(key, cacheItem);
             log.Debug($"Item {key} added successfully with group {group}");
             return true;

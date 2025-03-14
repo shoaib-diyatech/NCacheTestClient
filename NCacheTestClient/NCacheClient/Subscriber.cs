@@ -38,6 +38,11 @@ public class Subscriber
         return JsonConvert.DeserializeObject<Subscriber>(json);
     }
 
+    public static Subscriber Parse(string json)
+    {
+        return Deserialize(json);
+    }
+
     public override string ToString()
     {
         return $"Subscriber: {Name} ({Msisdn})";
