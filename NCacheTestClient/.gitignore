@@ -19,6 +19,7 @@ mono_crash.*
 !.vscode/extensions.json
 .vscode/*
 .bin/*
+.vs/*
 
 # Build results
 bin/
