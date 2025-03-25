@@ -15,7 +15,8 @@ public class TagClient : NCache
     {
     }
 
-    public enum SubscriberTags{
+    public enum SubscriberTags
+    {
         ISB,
         KHI,
         LHR,
@@ -38,6 +39,7 @@ public class TagClient : NCache
         string[] tags1 = new string[] { SubscriberTags.ISB.ToString(), SubscriberTags.KHI.ToString() };
         string[] tags2 = new string[] { SubscriberTags.KHI.ToString(), SubscriberTags.LHR.ToString() };
         string[] tags3 = new string[] { SubscriberTags.LHR.ToString(), SubscriberTags.ISB.ToString() };
+        cache.Clear();
         AddWithTags(tk1, tv1, tags1);
         AddWithTags(tk2, tv2, tags1);
         AddWithTags(tk3, tv3, tags2);
@@ -50,8 +52,8 @@ public class TagClient : NCache
         AddWIthNamedTags();
         AddWIthNamedTags();
         SearchOneTagWithSQL(SubscriberTags.ISB.ToString());
-        SearchNamedTagsWithOQL("Age", 10);
-
+        SearchNamedTagsWithOQL("Age", 40, true);
+        //Todo: Insert large amount of subscribers with Tags and then compare the retrieval time with GetAllTagData vs SearchOneTagWithSQL
     }
 
     public bool AddWithTags(string key, object value, string[] tag)
@@ -59,7 +61,8 @@ public class TagClient : NCache
         try
         {
             Subscriber sub = Subscriber.GetRandomSubscriber();
-            CacheItem cacheItem = new CacheItem(Subscriber.Serialize(sub));
+            // CacheItem cacheItem = new CacheItem(Subscriber.Serialize(sub));
+            CacheItem cacheItem = new CacheItem(sub);
             Tag[] tags = new Tag[tag.Count()];
             for (int i = 0; i < tags.Count(); i++)
             {
@@ -85,8 +88,9 @@ public class TagClient : NCache
         try
         {
             Subscriber sub = Subscriber.GetRandomSubscriber();
-            key = sub.Id.ToString();
-            CacheItem cacheItem = new CacheItem(Subscriber.Serialize(sub));
+            key = sub.Msisdn.ToString();
+            // CacheItem cacheItem = new CacheItem(Subscriber.Serialize(sub));
+            CacheItem cacheItem = new CacheItem(sub);
 
             // Creating a Named Tags Dictionary
             var namedTags = new NamedTagsDictionary();
@@ -155,24 +159,26 @@ public class TagClient : NCache
         return keys;
     }
 
-    public IDictionary<string, string> GetAllTagData(string tag, bool printData)
+    public IDictionary<string, Subscriber> GetAllTagData(string tag, bool printData)
     {
         try
         {
             Tag[] tags = new Tag[1];
             tags[0] = new Tag(tag);
-            IDictionary<string, string> cacheData = cache.SearchService.GetByTags<string>(tags, TagSearchOptions.ByAllTags);
+            IDictionary<string, Subscriber> cacheData = cache.SearchService.GetByTags<Subscriber>(tags, TagSearchOptions.ByAllTags);
+            log.Debug($"Total items found with tag {tag}: {cacheData.Count}");
             if (printData)
-                foreach (var (k, v) in cacheData)
+                foreach (var (k, sub) in cacheData)
                 {
-                    Subscriber sub = Subscriber.Parse(v);
-                    log.Debug($"Key: {k}, Value: {v}");
+                    // Subscriber sub = v;
+                    if (printData)
+                        log.Debug($"Tag: {tag}, Key: {k}, {sub}");
                 }
             return cacheData;
         }
         catch (Exception ex)
         {
-            log.Error($"Error getting items with tag {tag}: {ex.Message}");
+            log.Error($"TagClient: GetAllTagData: Error getting items with tag {tag}: {ex.Message}");
             return null;
         }
     }
@@ -183,12 +189,12 @@ public class TagClient : NCache
         {
             // Define the SQL query with a parameter placeholder
             string tagPlaceHolder = "$Tag$";
-            string query = $"SELECT Email FROM NCacheClient.Subscriber WHERE {tagPlaceHolder} = ?";
+            string query = $"SELECT $VALUE$ FROM NCacheClient.Subscriber WHERE $Tag$ = ?";
             log.Debug($"Executing Query: {query}");
 
             // Create a QueryCommand and add the parameter value
             var queryCommand = new QueryCommand(query);
-             queryCommand.Parameters.Add(tagPlaceHolder, tagName);
+            queryCommand.Parameters.Add("$Tag$", tagName);
 
             // Execute the query
             ICacheReader reader = cache.SearchService.ExecuteReader(queryCommand);
@@ -202,7 +208,11 @@ public class TagClient : NCache
             // Iterate through the results
             while (reader.Read())
             {
-                Subscriber item = reader.GetValue<Subscriber>(0);
+                // string id = reader.GetValue<string>("Id");
+                // string Msisdn = reader.GetValue<string>("Msisdn");
+                // string Email = reader.GetValue<string>("Email");
+                Subscriber sub = reader.GetValue<Subscriber>("$VALUE$");
+                log.Debug($"Tag: {tagName}, {sub}");
                 // Process the retrieved item
             }
         }
@@ -212,13 +222,13 @@ public class TagClient : NCache
             log.Error($"Error: {ex.Message}");
         }
     }
-    public void SearchNamedTagsWithOQL(string tagName, int value)
+    public void SearchNamedTagsWithOQL(string tagName, int value, bool printData)
     {
         try
         {
             // Define the SQL query with a parameter placeholder
-            string query = $"SELECT Email FROM NCacheClient.Subscriber WHERE {tagName} > {value}";
-            log.Debug($"Executing Query: {query}");
+            string query = $"SELECT Msisdn FROM NCacheClient.Subscriber WHERE {tagName} > {value}";
+            log.Debug($"SearchNamedTagsWithOQL: Query: {query}");
 
             // Create a QueryCommand and add the parameter value
             var queryCommand = new QueryCommand(query);
@@ -229,15 +239,16 @@ public class TagClient : NCache
             int fieldCount = reader.FieldCount;
             if (fieldCount == 0)
             {
-                log.Error($"No items found with {tagName} > {value}");
+                log.Error($"SearchNamedTagsWithOQL: No items found with {tagName} > {value}");
                 return;
             }
 
             // Iterate through the results
             while (reader.Read())
             {
-                Subscriber item = reader.GetValue<Subscriber>(0);
-                // Process the retrieved item
+                string msisdn = reader.GetValue<string>("Msisdn");
+                if(printData)
+                    log.Debug($"Msisdn: {msisdn}");
             }
         }
         catch (OperationFailedException ex)

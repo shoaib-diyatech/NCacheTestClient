@@ -3,7 +3,7 @@ using System;
 using System.Reflection.Metadata.Ecma335;
 using Newtonsoft.Json;
 
-//[Serializable]
+[Serializable]
 public class Subscriber
 {
     public string Msisdn { get; set; }
@@ -14,8 +14,22 @@ public class Subscriber
 
     public bool IsActive { get; set; }
 
-    public DateOnly DateOfBirth { get; set; }
-    //public ServiceType ServiceType { get; set; }
+    [NonSerialized]
+    private DateOnly _dateOfBirth;
+
+    [JsonIgnore]
+    public DateOnly DateOfBirth
+    {
+        get => _dateOfBirth;
+        set => _dateOfBirth = value;
+    }
+
+    public string DateOfBirthString
+    {
+        get => _dateOfBirth.ToString("dd-MM-yyyy");
+        set => _dateOfBirth = DateOnly.Parse(value);
+    }
+    
     public long Id { get; set; }
 
     /// <summary>
@@ -77,6 +91,7 @@ public class Subscriber
     {
 
         return DateTime.Now.Year - DateOfBirth.Year;
+        // return 10;
 
     }
 }

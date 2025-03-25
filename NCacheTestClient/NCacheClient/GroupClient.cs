@@ -38,7 +38,7 @@ public class GroupClient : NCache
         string HighRPU = Group.HighRPU.ToString();
         string VIP = Group.VIP.ToString();
         string LowRPU = Group.LowRPU.ToString();
-
+        cache.Clear();
         AddWithGroup(gk1, vg1, HighRPU);
         AddWithGroup(gk2, vg2, HighRPU);
         AddWithGroup(gk3, vg3, HighRPU);
@@ -57,12 +57,12 @@ public class GroupClient : NCache
     public void SearchWithOQL(string groupName, bool logAllData = false)
     {
         string groupPlaceHodler = "$Group$";
-        string queryWithoutGroup = $"SELECT Email FROM NCacheClient.Subscriber";
-        string query = $"SELECT Email FROM NCacheClient.Subscriber WHERE {groupPlaceHodler} = ?";
+        //string queryWithoutGroup = $"SELECT Name, Email, Msisdn FROM NCacheClient.Subscriber";
+        string query = $"SELECT $VALUE$ FROM NCacheClient.Subscriber WHERE $Group$ = ?";
         // Use QueryCommand for query execution
-        var queryCommand = new QueryCommand(queryWithoutGroup);
-         queryCommand.Parameters.Add(groupPlaceHodler, groupName);
-
+        var queryCommand = new QueryCommand(query);
+        queryCommand.Parameters.Add("$Group$", groupName);
+        log.Debug($"{groupName}: {query}");
         // Executing the Query
         ICacheReader reader = cache.SearchService.ExecuteReader(queryCommand);
         // Read results if the result set is not empty
@@ -71,9 +71,21 @@ public class GroupClient : NCache
             // Iterate through the results
             while (reader.Read())
             {
-                Subscriber item = reader.GetValue<Subscriber>(0);
+                //Loop through all the fields and print the field name and value
+                // int totalFiled = reader.FieldCount;
+                // for (int i = 0; i < totalFiled; i++)
+                // {
+                //     string fieldName = reader.GetName(i);
+                //     string fieldValue = reader.GetValue<string>(i);
+                //     log.Debug($"Field: {fieldName}, Value: {fieldValue}");
+                // }
+
+                string name = "";// reader.GetValue<string>("Name");
+                string email = "";//reader.GetValue<string>("Email");
+                string msisdn = "";//reader.GetValue<string>("Msisdn");
+                Subscriber sub = reader.GetValue<Subscriber>("$VALUE$");
                 if (logAllData)
-                    log.Debug($"Subscriber: {item}");
+                    log.Debug($"{sub}");
             }
         }
         else
@@ -89,13 +101,14 @@ public class GroupClient : NCache
         {
             //Car sub = new Car(){ Name = "+123456789" };
             Subscriber sub = Subscriber.GetRandomSubscriber();
-            CacheItem cacheItem = new CacheItem(Subscriber.Serialize(sub));
-            
+            //CacheItem cacheItem = new CacheItem(Subscriber.Serialize(sub));
+            CacheItem cacheItem = new CacheItem(sub);
+
             //CacheItem cacheItem = new CacheItem(sub);
             cacheItem.Group = group;
             key = sub.Msisdn;
             cache.Add(key, cacheItem);
-            log.Debug($"Item {key} added successfully with group {group}");
+            log.Debug($"Item {key} added successfully with group {group}, {sub}");
             return true;
         }
         catch (Exception ex)

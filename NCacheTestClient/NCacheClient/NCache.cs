@@ -19,7 +19,7 @@ public abstract class NCache
     public int _port;
     public string _cacheName;
 
-    public bool isConnected = false;
+    private bool _isConnected = false;
 
     protected ICache cache;
 
@@ -37,14 +37,26 @@ public abstract class NCache
         _cacheName = cacheName;
     }
 
+    public NCache(string cacheName)
+    {
+        _cacheName = cacheName;
+        CacheManager.StartCache(_cacheName);
+        cache = CacheManager.GetCache(_cacheName);
+        if (cache != null)
+        {
+            _isConnected = true;
+            log.Info($"Cache {_cacheName} Initialized");
+        }
+    }
+
     public bool Initialize()
     {
         // Connect to the cache
         try
         {
-            if (isConnected)
+            if (_isConnected)
             {
-                log.Info($"Cache {_cacheName} is already connected");
+                log.Info($"Cache {_cacheName} is already Initialized");
                 return true;
             }
             var serverInfoList = new List<ServerInfo>();
@@ -64,7 +76,7 @@ public abstract class NCache
             };
 
             cache = CacheManager.GetCache(_cacheName, connectionOptions);
-            isConnected = true;
+            _isConnected = true;
             log.Info($"Connected to cache: [{_cacheName}]");
         }
         catch (Exception e)
@@ -79,7 +91,7 @@ public abstract class NCache
 
     public bool Add(string key, string value)
     {
-        if (!isConnected)
+        if (!_isConnected)
         {
             Console.WriteLine("Cache is not connected");
             return false;
@@ -144,7 +156,7 @@ public abstract class NCache
 
     public object Get(string key)
     {
-        if (!isConnected)
+        if (!_isConnected)
         {
             log.Error("Cache is not connected");
             return false;
@@ -165,7 +177,7 @@ public abstract class NCache
 
     public object Remove(string key)
     {
-        if (!isConnected)
+        if (!_isConnected)
         {
             log.Error("Cache is not connected");
             return false;
@@ -196,7 +208,7 @@ public abstract class NCache
     /// <param name="key"></param>
     public void Delete(string key)
     {
-        if (!isConnected)
+        if (!_isConnected)
         {
             log.Error("Cache is not connected");
             return;
@@ -330,7 +342,7 @@ public abstract class NCache
 
     public void ClearCache()
     {
-        if (!isConnected)
+        if (!_isConnected)
         {
             log.Error("Cache is not connected");
             return;
@@ -341,7 +353,7 @@ public abstract class NCache
 
     public bool Contains(string key)
     {
-        if (!isConnected)
+        if (!_isConnected)
         {
             log.Error("Cache is not connected");
             return false;

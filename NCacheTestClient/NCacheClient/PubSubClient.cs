@@ -1,4 +1,6 @@
+using Alachisoft.NCache.Client;
 using Alachisoft.NCache.Runtime.Caching;
+using Alachisoft.NCache.Runtime.Events;
 
 namespace NCacheClient;
 
@@ -31,7 +33,7 @@ public class PubSubClient : NCache
                     break;
                 }
                 System.Threading.Thread.Sleep(5000);
-                
+
             }
             catch (Exception ex)
             {
@@ -106,6 +108,43 @@ public class PubSubClient : NCache
             ITopicSubscription subscription = topic.CreateSubscription(messageReceivedCallback);
             log.Debug($"Subscribed topic: {topicName}, on cache: {_cacheName}");
         }
+    }
+
+    public void UnsubscribeTopic(string topicName)
+    {
+        // Get the topic
+        ITopic topic = cache.MessagingService.GetTopic(topicName);
+        // If topic exists, Create subscription
+        if (topic != null)
+        {
+            // Create and register subscribers for order topic
+            // Message received callback is specified
+            ITopicSubscription subscription = topic.CreateSubscription(new MessageReceivedCallback(MessageReceived));
+            log.Debug($"Subscribed topic: {topicName}, on cache: {_cacheName}");
+        }
+    }
+
+    public void ContinousQuery()
+    {
+        // Query for required operation
+        string query = "SELECT $VALUE$ FROM NCacheClient.Subscriber WHERE Age > ?";
+
+        var queryCommand = new QueryCommand(query);
+        queryCommand.Parameters.Add("Country", "USA");
+
+        // Create Continuous Query
+        var cQuery = new ContinuousQuery(queryCommand);
+
+        // Register to be notified when a qualified item is added to the cache
+        cQuery.RegisterNotification(new QueryDataNotificationCallback(QueryItemCallBack), EventType.ItemAdded | EventType.ItemUpdated | EventType.ItemRemoved, EventDataFilter.None);
+
+        // Register continuousQuery on server 
+        cache.MessagingService.RegisterCQ(cQuery);
+    }
+
+    private void QueryItemCallBack(string key, CQEventArg arg)
+    {
+        log.Debug($"QueryItemCallBack: key: [{key}], EventType: [{arg.EventType}]");
     }
 
     public void MessageReceived(object sender, MessageEventArgs args)

@@ -17,23 +17,25 @@ public class LockingClient : NCache
         string key = "ExclusiveLockKey1";
         string value = "ExclusiveLockValue1";
         log.Debug($"Inserting item {key} with value {value} with ExclusiveLock");
-        ExclusiveLock(key, 10);
+        // ExclusiveLock(key, 10);
         log.Debug($"Getting item {key} without any lock");
         string valueWithoutGetLock = cache.Get<string>(key);
         string newValue = "ExclusiveLockValue1Updated";
         log.Debug($"Updating item {key} with value {newValue} without any lock");
         cache.Insert(key, newValue);
         //Now Get with lock
-        GetWithLock(key, 10);
+        // GetWithLock(key, 10);
         //Insert with lock and finally release lock
         bool releaseLock = true;
         string newValueWithLock = "ExclusiveLockValue1UpdatedWithLock";
-        InsertWithLock(key, newValueWithLock, releaseLock);
+        // InsertWithLock(key, newValueWithLock, releaseLock);
 
         // Testing Insert if Same
-        InsertIfSame();
+        // InsertIfSame();
 
-        InsertWithWrongHandle();
+        // InsertWithWrongHandle();
+
+        TestLockId();
     }
 
     public bool ExclusiveLock(string key, int lockTimeInSecs = 0)
@@ -69,6 +71,37 @@ public class LockingClient : NCache
         {
             log.Error($"Error unlocking item {key}: {ex.Message}");
         }
+    }
+
+    public void TestLockId()
+    {
+        string sameKey = "sameKey";
+        string newKey1 = "newKey1";
+        string newKey2 = "newKey2";
+        string newKey3 = "newKey3";
+        cache.Insert(sameKey, "sameValue");
+        cache.Insert(newKey1, "newValue1");
+        cache.Insert(newKey2, "newValue2");
+        cache.Insert(newKey3, "newValue3");
+        LockHandle lockHandle = new LockHandle();
+        cache.Lock(sameKey, TimeSpan.FromSeconds(10), out lockHandle);
+        log.Debug($"LockId acquired on cache: {_cacheName}, key: {sameKey}: {lockHandle.LockId}");
+        cache.Unlock(sameKey, lockHandle);
+        cache.Get<string>(sameKey, true, TimeSpan.FromSeconds(10), ref lockHandle);
+        log.Debug($"LockId acquired on cache: {_cacheName}, key: {sameKey}: {lockHandle.LockId}");
+        cache.Unlock(sameKey, lockHandle);
+        lockHandle = new LockHandle();
+        cache.Get<string>(sameKey, true, TimeSpan.FromSeconds(10), ref lockHandle);
+        log.Debug($"New Lock acquired on cache: {_cacheName}, key: {sameKey}: {lockHandle.LockId}");
+        cache.Lock(newKey1, TimeSpan.FromSeconds(10), out lockHandle);
+        log.Debug($"LockId acquired on cache: {_cacheName}, key: {newKey1}: {lockHandle.LockId}");
+        cache.Unlock(newKey1, lockHandle);
+        cache.Lock(newKey2, TimeSpan.FromSeconds(10), out lockHandle);
+        log.Debug($"LockId acquired on cache: {_cacheName}, key: {newKey2}: {lockHandle.LockId}");
+        cache.Unlock(newKey2, lockHandle);
+        cache.Lock(newKey3, TimeSpan.FromSeconds(10), out lockHandle);
+        log.Debug($"LockId acquired on cache: {_cacheName}, key: {newKey3}: {lockHandle.LockId}");
+        cache.Unlock(newKey3, lockHandle);
     }
 
     public object GetWithLock(string key, int lockTimeInSecs = 0)
