@@ -74,7 +74,7 @@ Console.WriteLine($"serverIps: [{string.Join(", ", serverIps)}]");
 //Console.WriteLine($"serverPort: [{serverPort}]");
 
 // string CacheName = "EventsCluster";
- string CacheName = "SKInProc"; // "InProcCache";
+ string CacheName = "SKOnly"; // "InProcCache";
 //string CacheName = "TestMirror2";
 
 Console.WriteLine($"Cache: [{CacheName}]");
@@ -87,8 +87,8 @@ Console.WriteLine($"Cache: [{CacheName}]");
 //  NCache nCacheClient = new GroupClient(serverIps, port, CacheName);
 //  NCache nCacheClient = new TagClient(serverIps, port, CacheName);
 //NCache nCacheClient = new DependencyClient(serverIps, port, CacheName);
-// CacheThrough nCacheClient = new CacheThrough(serverIps, port, CacheName);
-NCache nCacheClient = new InProcClient(CacheName);
+CacheThrough nCacheClient = new CacheThrough(serverIps, port, CacheName);
+// NCache nCacheClient = new InProcClient(CacheName);
 
 nCacheClient.Initialize();
 nCacheClient.Test();
