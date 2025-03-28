@@ -86,8 +86,8 @@ Console.WriteLine($"Cache: [{CacheName}]");
 // NCache nCacheClient = new LockingClient(serverIps, port, CacheName);
 //  NCache nCacheClient = new GroupClient(serverIps, port, CacheName);
 //  NCache nCacheClient = new TagClient(serverIps, port, CacheName);
-//NCache nCacheClient = new DependencyClient(serverIps, port, CacheName);
-CacheThrough nCacheClient = new CacheThrough(serverIps, port, CacheName);
+NCache nCacheClient = new DependencyClient(serverIps, port, CacheName);
+// CacheThrough nCacheClient = new CacheThrough(serverIps, port, CacheName);
 // NCache nCacheClient = new InProcClient(CacheName);
 // NCache nCacheClient = new AsyncClient(serverIps, port, CacheName);
 

@@ -25,8 +25,38 @@ public class DependencyClient : NCache
 
     public override void Test()
     {
-        TestSingleDependency();
+        TestSingleKeyBasedDependency();
+
+        TestFileBasedDependency();
+
         TestCircularDependency();
+    }
+
+    public void TestFileBasedDependency()
+    {
+        try
+        {
+            string fileDependentKey = "fileDependentKey";
+            string fileDependentValue = "fileDependentValue";
+            string dependentFilePath = "D:\\temp\\file.txt";
+            CreateFileBasedDependency(fileDependentKey, fileDependentValue, dependentFilePath);
+            // Checking if key is inserted in cache
+            var item = base.Get(fileDependentKey);
+            log.Debug($"Item with file dependency added in cache: {item}, dependent on file: {dependentFilePath}");
+            ConsoleKeyInfo keyPressed;
+            do
+            {
+                Console.WriteLine("Press any key, after changing file, ESC to exit...");
+                keyPressed = Console.ReadKey();
+                // Checking if key is removed from cache after file change
+                item = base.Get(fileDependentKey);
+                log.Debug($"Item with file dependency after file change: [{item}]");
+            } while (item != null && keyPressed.Key != ConsoleKey.Escape);
+        }
+        catch (Exception ex)
+        {
+            log.Error($"Error in file based dependency test: {ex.Message}");
+        }
     }
 
     [Obsolete]
@@ -48,13 +78,13 @@ public class DependencyClient : NCache
         // cache.A
     }
 
-    public void TestSingleDependency(){
+    public void TestSingleKeyBasedDependency()
+    {
         // Adding parent Item
         Subscriber parentSubscriber = Subscriber.GetRandomSubscriber();
         log.Debug($"Adding parent item: {parentSubscriber.Msisdn}");
         parentSubscriber.Email = "parent@dependency.com";
         base.AddCacheItem(parentSubscriber.Msisdn.ToString(), Subscriber.Serialize(parentSubscriber));
-        
 
         // Adding child Item with parent's dependency
         Subscriber childSubscriber = Subscriber.GetRandomSubscriber();
@@ -125,4 +155,28 @@ public class DependencyClient : NCache
             log.Error($"Error adding dependent item in cache: {_cacheName}, {ex.Message}");
         }
     }
+
+    /// <summary>
+    /// Create file based dependency, where a key is dependent on a file.
+    /// If the file is renamed, removed or contents are changed, the item will be removed from cache.
+    /// This is a test method and should be implemented with actual file path and logic.
+    /// </summary>
+    public void CreateFileBasedDependency(string key, object value, string filePath)
+    {
+        try
+        {
+            // Create a file dependency
+            FileDependency fileDependency = new FileDependency(filePath);
+            // Create a cache item with the value and the file dependency
+            CacheItem cacheItem = new CacheItem(value) { Dependency = fileDependency };
+            // Add the item to the cache
+            cache.Add(key, cacheItem);
+            log.Debug($"Added item with file dependency: {key}");
+        }
+        catch (Exception ex)
+        {
+            log.Error($"Error adding item with file dependency: {ex.Message}");
+        }
+    }
+
 }

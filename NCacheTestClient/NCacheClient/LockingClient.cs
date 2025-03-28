@@ -33,9 +33,9 @@ public class LockingClient : NCache
         // Testing Insert if Same
         // InsertIfSame();
 
-        // InsertWithWrongHandle();
+        InsertWithWrongHandle();
 
-        TestLockId();
+        // TestLockId();
     }
 
     public bool ExclusiveLock(string key, int lockTimeInSecs = 0)
@@ -45,7 +45,7 @@ public class LockingClient : NCache
             bool lockAcquired = cache.Lock(key, TimeSpan.FromSeconds(lockTimeInSecs), out LockHandle lockHandle);
             if (lockAcquired)
             {
-                log.Debug($"Item {key} locked successfully");
+                log.Debug($"Item {key} locked successfully, for {lockTimeInSecs} seconds");
             }
             else
             {
@@ -59,10 +59,71 @@ public class LockingClient : NCache
             return false;
         }
     }
+
+    public object GetWithLock(string key, LockHandle lockHandle, TimeSpan lockTime)
+    {
+        try
+        {
+            bool acquireLock = true;
+            String value = cache.Get<string>(key, acquireLock, lockTime, ref lockHandle);
+            log.Debug($"Item {key} fetched successfully, lock acquired for: {lockTime.Seconds} seconds");
+            return value;
+        }
+        catch (Exception ex)
+        {
+            log.Error($"Error getting item {key}: {ex.Message}");
+            return null;
+        }
+    }
+
+    public object GetWithLock(string key, int lockTimeInSecs = 0)
+    {
+        try
+        {
+            bool acquireLock = true;
+            LockHandle lockHandle = new LockHandle();
+            String value = cache.Get<string>(key, acquireLock, TimeSpan.FromSeconds(lockTimeInSecs), ref lockHandle);
+            return value;
+        }
+        catch (Exception ex)
+        {
+            log.Error($"Error getting item {key}: {ex.Message}");
+            return null;
+        }
+    }
+
+    public void InsertWithLock(string key, string value, bool releaseLock = true)
+    {
+        try
+        {
+            CacheItem cacheItem = new CacheItem(value);
+            LockHandle lockHandle = new LockHandle();
+            CacheItemVersion cacheItemVersion = cache.Insert(key, cacheItem, lockHandle, releaseLock);
+        }
+        catch (Exception ex)
+        {
+            log.Error($"Error inserting item {key}: {ex.Message}");
+        }
+    }
+    public void InsertWithLock(string key, string value, LockHandle lockHandle, bool releaseLock = true)
+    {
+        try
+        {
+            CacheItem cacheItem = new CacheItem(value);
+            CacheItemVersion cacheItemVersion = cache.Insert(key, cacheItem, lockHandle, releaseLock);
+            log.Debug($"Item {key} inserted successfully with value {value}");
+        }
+        catch (Exception ex)
+        {
+            log.Error($"Error inserting item {key}: {ex.Message}");
+        }
+    }
+
     public void ExclusiveUnlock(string key)
     {
         try
         {
+            // You do not need the same lock handle to unlock the key
             LockHandle lockHandle = new LockHandle();
             cache.Unlock(key, lockHandle);
             log.Debug($"Item {key} unlocked successfully");
@@ -71,6 +132,22 @@ public class LockingClient : NCache
         {
             log.Error($"Error unlocking item {key}: {ex.Message}");
         }
+    }
+
+    public void TestGetAndUpdateThroughLock()
+    {
+        LockHandle lockHandleForGetAndUpdate = new LockHandle();
+        string key = "abc";
+        cache.Insert(key, "abcValue");
+        // Geting from cache and locking the item 
+        GetWithLock(key, lockHandleForGetAndUpdate, TimeSpan.FromSeconds(1));
+        // Updating the item in cache with lock handle
+        string newValue = "abcValueUpdated";
+        LockHandle wrongLockHandle = new LockHandle();
+        InsertWithLock(key, newValue, wrongLockHandle, true); // This should throw exception as we are using wrong lock handle
+        // Now checking if the value is updated
+        string updatedValue = cache.Get<string>(key);
+        log.Debug($"Item {key} updated value {updatedValue}");
     }
 
     public void TestLockId()
@@ -102,36 +179,6 @@ public class LockingClient : NCache
         cache.Lock(newKey3, TimeSpan.FromSeconds(10), out lockHandle);
         log.Debug($"LockId acquired on cache: {_cacheName}, key: {newKey3}: {lockHandle.LockId}");
         cache.Unlock(newKey3, lockHandle);
-    }
-
-    public object GetWithLock(string key, int lockTimeInSecs = 0)
-    {
-        try
-        {
-            bool acquireLock = true;
-            LockHandle lockHandle = new LockHandle();
-            String value = cache.Get<string>(key, acquireLock, TimeSpan.FromSeconds(lockTimeInSecs), ref lockHandle);
-            return value;
-        }
-        catch (Exception ex)
-        {
-            log.Error($"Error getting item {key}: {ex.Message}");
-            return null;
-        }
-    }
-
-    public void InsertWithLock(string key, string value, bool releaseLock = true)
-    {
-        try
-        {
-            CacheItem cacheItem = new CacheItem(value);
-            LockHandle lockHandle = new LockHandle();
-            CacheItemVersion cacheItemVersion = cache.Insert(key, cacheItem, lockHandle, releaseLock);
-        }
-        catch (Exception ex)
-        {
-            log.Error($"Error inserting item {key}: {ex.Message}");
-        }
     }
 
     public void InsertIfSame()

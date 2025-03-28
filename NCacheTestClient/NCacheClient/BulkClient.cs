@@ -50,8 +50,8 @@ public class BulkClient : NCache
             Dictionary<string, CacheItem> dictionaryCacheItems = new();
             for (int i = 0; i < keys.Count; i++)
             {
-                CacheItem ci = new CacheItem(values[i]);
-                dictionaryCacheItems.Add(keys[i], ci);
+                CacheItem cacheItem = new CacheItem(values[i]);
+                dictionaryCacheItems.Add(keys[i], cacheItem);
             }
 
             IDictionary<string, Exception> addExceptionItems = cache.AddBulk(dictionaryCacheItems);

@@ -15,8 +15,9 @@ public class PubSubClient : NCache
     {
     }
 
-    private const string _durableTopic = "Durable";
-    private const string _nonDurableTopic = "NonDurable";
+    private const string _orderTopic = "OrderTopic";
+
+    private const string _subscriptionName = "Client1";
 
     private readonly string[] _allTopics = {
         "Kumail",
@@ -31,15 +32,27 @@ public class PubSubClient : NCache
         CreateTopic(pubTopicName);
         SubscribeTopic(subTopicName);
         PublishOnTopic(pubTopicName, "Hello, from SK World!");
-        CreateTopic(_durableTopic);
+        CreateTopic(_orderTopic);
         //PublishOnTopic(_durableTopic, "Hello DurableTopic, from SK World! 6");
         //Thread.Sleep(10000);
         //PublishOnTopic(_durableTopic, "Hello DurableTopic, from SK World! 7");
-        DummyContinousPublish(_durableTopic);
+        
+        // DummyContinousPublish(_orderTopic);
         // DurableSubsription(_durableTopic);
         // SubscribeTopics(_allTopics);
-        // DurableSubscribeTopics(_allTopics);
+        // DurableSubscribeTopics(_allTopics, _subscriptionName);
+        TestMultipleExclusiveSubscriptions(_orderTopic, _subscriptionName);
+    }
 
+    /// <summary>
+    /// Test multiple exclusive subscriptions on the same topic, with same subscription name.
+    /// This should throw an exception, as multiple exclusive subscriptions, with same subscription name are not allowed on the same topic
+    /// </summary>
+    public void TestMultipleExclusiveSubscriptions(string topicName, string subscriptionName)
+    {
+        bool isShared = false;
+        DurableSubsription(topicName, subscriptionName, isShared);
+        DurableSubsription(topicName, subscriptionName, isShared);
     }
 
     public void SubscribeTopics(string[] topics)
@@ -50,11 +63,11 @@ public class PubSubClient : NCache
         }
     }
 
-    public void DurableSubscribeTopics(string[] topics)
+    public void DurableSubscribeTopics(string[] topics, string subscriptionName, bool isShared = true)
     {
         foreach (var topic in topics)
         {
-            DurableSubsription(topic);
+            DurableSubsription(topic, subscriptionName, isShared);
         }
     }
 
@@ -146,7 +159,7 @@ public class PubSubClient : NCache
         }
     }
 
-    public void DurableSubsription(string topicName)
+    public void DurableSubsription(string topicName, string subscriptionName, bool isShared = true)
     {
         try
         {
@@ -155,20 +168,20 @@ public class PubSubClient : NCache
             if (topic != null)
             {
                 MessageReceivedCallback durableMessageCallback = new MessageReceivedCallback(DurableMessagReceived);
-                SubscriptionPolicy subscriptionPolicy = SubscriptionPolicy.Shared;
+                SubscriptionPolicy subscriptionPolicy = isShared ? SubscriptionPolicy.Shared : SubscriptionPolicy.Exclusive;
                 DeliveryMode deliveryMode = DeliveryMode.Async;
                 TimeSpan timeSpan = TimeSpan.FromSeconds(10);
-                IDurableTopicSubscription durableSubscription = topic.CreateDurableSubscription(topicName, subscriptionPolicy, durableMessageCallback, timeSpan, deliveryMode);
-                log.Debug($"topic: {topicName}, subscribed via durable subscription, on cache: {_cacheName}");
+                IDurableTopicSubscription durableSubscription = topic.CreateDurableSubscription(subscriptionName, subscriptionPolicy, durableMessageCallback, timeSpan, deliveryMode);
+                log.Debug($"topic: {topicName}, subscribed via subscriptionName: {subscriptionName} with durable subscription, on cache: {_cacheName}");
             }
             else
             {
-                log.Debug($"Cannot subscribe to topic: {topicName}, via durable subscription on cache: {_cacheName}");
+                log.Debug($"Cannot subscribe to topic: {topicName}, with subscriptionName: {subscriptionName} on cache: {_cacheName}, topic doesn't exist");
             }
         }
         catch (Exception ex)
         {
-            log.Error($"Error creating durable subscription: {ex.Message}");
+            log.Error($"Error creating durable subscription topic: {topicName}, subscriptionName: {subscriptionName}: {ex.Message}");
         }
     }
 
