@@ -15,25 +15,63 @@ public class PubSubClient : NCache
     {
     }
 
+    private const string _durableTopic = "Durable";
+    private const string _nonDurableTopic = "NonDurable";
+
+    private readonly string[] _allTopics = {
+        "Kumail",
+        "Ali",
+        "OC"
+    };
+
     public override void Test()
     {
         string subTopicName = "OC";
-        string pubTopicName = "RamadanKareemBro33333333333333";
+        string pubTopicName = "SKTopic";
         CreateTopic(pubTopicName);
         SubscribeTopic(subTopicName);
-        long messageId = long.MinValue;
-        log.Debug($"Publishing messages on topic: {pubTopicName} cache: {_cacheName}");
+        PublishOnTopic(pubTopicName, "Hello, from SK World!");
+        CreateTopic(_durableTopic);
+        //PublishOnTopic(_durableTopic, "Hello DurableTopic, from SK World! 6");
+        //Thread.Sleep(10000);
+        //PublishOnTopic(_durableTopic, "Hello DurableTopic, from SK World! 7");
+        DummyContinousPublish(_durableTopic);
+        // DurableSubsription(_durableTopic);
+        // SubscribeTopics(_allTopics);
+        // DurableSubscribeTopics(_allTopics);
+
+    }
+
+    public void SubscribeTopics(string[] topics)
+    {
+        foreach (var topic in topics)
+        {
+            SubscribeTopic(topic);
+        }
+    }
+
+    public void DurableSubscribeTopics(string[] topics)
+    {
+        foreach (var topic in topics)
+        {
+            DurableSubsription(topic);
+        }
+    }
+
+    public void DummyContinousPublish(string topic)
+    {
+        long messageId = 1;//long.MinValue;
+        log.Debug($"Publishing messages on topic: [{topic}] on cache: [{_cacheName}]");
         while (true)
         {
             try
             {
-                PublishOnTopic(pubTopicName, $"{++messageId} Hello World!");
-                if (messageId <= long.MaxValue)
+                PublishOnTopic(topic, $"{++messageId} Hello World!");
+                if (messageId >= long.MaxValue)
                 {
                     break;
                 }
                 System.Threading.Thread.Sleep(5000);
-
             }
             catch (Exception ex)
             {
@@ -62,36 +100,34 @@ public class PubSubClient : NCache
             log.Error($"Error creating topic: {ex.Message}");
         }
     }
-    public void PublishOnTopic(string topicName, string message)
+    public void PublishOnTopic(string topicName, string message, TimeSpan? timeSpan = null)
     {
         // Get the topic
-        ITopic orderTopic = cache.MessagingService.GetTopic(topicName);
+        ITopic topic = cache.MessagingService.GetTopic(topicName);
 
-        if (orderTopic != null)
+        if (topic != null)
         {
-            // Create the object to be sent in message
-            //Subscriber sub = new Subscriber() { Msisdn = "1234567890", Id = 1 };
-
             // Create the new message with the object order
             var orderMessage = new Message(message);
 
             // Set the expiration time of the message
-            orderMessage.ExpirationTime = TimeSpan.FromSeconds(5000);
+            orderMessage.ExpirationTime = timeSpan ?? TimeSpan.FromSeconds(5000);
 
             // Register message delivery failure
-            orderTopic.MessageDeliveryFailure += OnFailureMessageReceived;
+            topic.MessageDeliveryFailure += OnFailureMessageReceived;
 
             //Register topic deletion notification
-            orderTopic.OnTopicDeleted = TopicDeleted;
+            topic.OnTopicDeleted = TopicDeleted;
 
-            // Publish the order with delivery option set as all
-            // and register message delivery failure
-            orderTopic.Publish(orderMessage, DeliveryOption.All, true);
-            log.Debug($"Published message: {message} on topic: {topicName} cache: {_cacheName}");
+            // Publishing the message with delivery option set as all
+            // also register message delivery failure
+            bool notifyDeliveryFailure = true;
+            topic.Publish(orderMessage, DeliveryOption.All, notifyDeliveryFailure);
+            log.Debug($"Published message: [{message}] on topic: [{topicName}] cache: {_cacheName}");
         }
         else
         {
-            log.Error($"Topic not found: {topicName}, on cache: {_cacheName}");
+            log.Error($"Topic not found: {topicName}, on cache: {_cacheName}, Are you sure you have created the topic?");
         }
     }
 
@@ -110,17 +146,43 @@ public class PubSubClient : NCache
         }
     }
 
+    public void DurableSubsription(string topicName)
+    {
+        try
+        {
+            ITopic topic = cache.MessagingService.GetTopic(topicName);
+            // If topic exists, Create subscription
+            if (topic != null)
+            {
+                MessageReceivedCallback durableMessageCallback = new MessageReceivedCallback(DurableMessagReceived);
+                SubscriptionPolicy subscriptionPolicy = SubscriptionPolicy.Shared;
+                DeliveryMode deliveryMode = DeliveryMode.Async;
+                TimeSpan timeSpan = TimeSpan.FromSeconds(10);
+                IDurableTopicSubscription durableSubscription = topic.CreateDurableSubscription(topicName, subscriptionPolicy, durableMessageCallback, timeSpan, deliveryMode);
+                log.Debug($"topic: {topicName}, subscribed via durable subscription, on cache: {_cacheName}");
+            }
+            else
+            {
+                log.Debug($"Cannot subscribe to topic: {topicName}, via durable subscription on cache: {_cacheName}");
+            }
+        }
+        catch (Exception ex)
+        {
+            log.Error($"Error creating durable subscription: {ex.Message}");
+        }
+    }
+
     public void UnsubscribeTopic(string topicName)
     {
         // Get the topic
         ITopic topic = cache.MessagingService.GetTopic(topicName);
-        // If topic exists, Create subscription
+        // If topic exists, Unsubscirbe
         if (topic != null)
         {
             // Create and register subscribers for order topic
             // Message received callback is specified
             ITopicSubscription subscription = topic.CreateSubscription(new MessageReceivedCallback(MessageReceived));
-            log.Debug($"Subscribed topic: {topicName}, on cache: {_cacheName}");
+            log.Debug($"UnSubscribed topic: {topicName}, on cache: {_cacheName}");
         }
     }
 
@@ -151,6 +213,12 @@ public class PubSubClient : NCache
     {
         Message message = (Message)args.Message;
         log.Debug($"Message received: [{message.Payload}], topic: [{args.Topic.Name}]");
+    }
+
+    public void DurableMessagReceived(object sender, MessageEventArgs args)
+    {
+        Message message = (Message)args.Message;
+        log.Debug($"Durable Message received: [{message.Payload}], topic: [{args.Topic.Name}]");
     }
     private void TopicDeleted(object sender, EventArgs args)
     {

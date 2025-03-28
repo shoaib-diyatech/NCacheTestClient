@@ -202,6 +202,19 @@ public abstract class NCache
         }
     }
 
+    public void Remove2(string key)
+    {
+        try
+        {
+            cache.Remove(key);
+            log.Debug($"Key removed: {key}");
+        }
+        catch (Exception e)
+        {
+            log.Error("Error removing from cache: ", e);
+        }
+    }
+
     /// <summary>
     /// Deletes a key from the cache wheather it exists or not.
     /// </summary>

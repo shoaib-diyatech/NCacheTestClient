@@ -25,31 +25,18 @@ public class GroupClient : NCache
 
     public override void Test()
     {
-        string gk1 = "gk333333333333333333331";
-        string vg1 = "vk1";
-        string gk2 = "gk2";
-        string vg2 = "vg2";
-        string gk3 = "gk3";
-        string vg3 = "vg3";
-        string gk4 = "gk4";
-        string vg4 = "vg4";
-        string gk5 = "gk5";
-        string vg5 = "vg5";
         string HighRPU = Group.HighRPU.ToString();
         string VIP = Group.VIP.ToString();
         string LowRPU = Group.LowRPU.ToString();
         cache.Clear();
-        AddWithGroup(gk1, vg1, HighRPU);
-        AddWithGroup(gk2, vg2, HighRPU);
-        AddWithGroup(gk3, vg3, HighRPU);
-        AddWithGroup(gk4, vg4, LowRPU);
-        AddWithGroup(gk5, vg5, LowRPU);
-        AddWithGroup(gk5, vg5, LowRPU);
-        AddWithGroup(gk5, vg5, VIP);
-        AddWithGroup(gk5, vg5, VIP);
-        AddWithGroup(gk5, vg5, VIP);
-        //GetAllGroupData(HighRPU, true);
-        //GetAllGroupData(VIP, true);
+
+        Subscriber sub = Subscriber.GetRandomSubscriber();
+        AddWithGroup(sub.Msisdn, sub, HighRPU);
+        UpdateGroup(sub.Msisdn, VIP);
+
+        GetAllGroupData(HighRPU, true);
+        GetAllGroupData(VIP, true);
+
         SearchWithOQL(HighRPU, true);
         SearchWithOQL(VIP, true);
     }
@@ -96,19 +83,12 @@ public class GroupClient : NCache
 
     public bool AddWithGroup(string key, object value, string group)
     {
-        key = "";
         try
         {
-            //Car sub = new Car(){ Name = "+123456789" };
-            Subscriber sub = Subscriber.GetRandomSubscriber();
-            //CacheItem cacheItem = new CacheItem(Subscriber.Serialize(sub));
-            CacheItem cacheItem = new CacheItem(sub);
-
-            //CacheItem cacheItem = new CacheItem(sub);
+            CacheItem cacheItem = new CacheItem(value);
             cacheItem.Group = group;
-            key = sub.Msisdn;
             cache.Add(key, cacheItem);
-            log.Debug($"Item {key} added successfully with group {group}, {sub}");
+            log.Debug($"Item {key} added successfully with group {group}, {value}");
             return true;
         }
         catch (Exception ex)
@@ -118,12 +98,51 @@ public class GroupClient : NCache
         }
     }
 
-    public IDictionary<string, string> GetAllGroupData(string groupName, bool logAllData = false)
+    public bool UpdateGroup(string key, string newGroup)
+    {
+        try
+        {
+            CacheItem cacheItem = cache.GetCacheItem(key);
+            string oldGroup = cacheItem.Group;
+            if(oldGroup == newGroup)
+            {
+                log.Debug($"Item {key} already has group {newGroup}");
+                return true;
+            }
+            cacheItem.Group = newGroup;
+            cache.Insert(key, cacheItem);
+            log.Debug($"Item {key} updated with new group {newGroup}, was: {oldGroup}");
+            return true;
+        }
+        catch (Exception ex)
+        {
+            log.Error($"Error updating group for item {key}: {ex.Message}");
+            return false;
+        }
+    }
+
+    public void GetGroupKeys(string groupName){
+        log.Debug($"Retreving keys from cache: {_cacheName} of group: {groupName}");
+        try
+        {
+            ICollection<string> groupKeys = cache.SearchService.GetGroupKeys(groupName);
+            foreach (var key in groupKeys)
+            {
+                log.Debug($"group: {groupName}, key: {key}");
+            }
+        }
+        catch (Exception exp)
+        {
+            log.Error("GroupClient: Error in GetGroupKeys", exp);
+        }
+    }
+
+    public IDictionary<string, Subscriber> GetAllGroupData(string groupName, bool logAllData = false)
     {
         log.Debug($"Retreving items from cache: {_cacheName} of group: {groupName}");
         try
         {
-            IDictionary<string, string> groupAllDataDict = cache.SearchService.GetGroupData<string>(groupName);
+            IDictionary<string, Subscriber> groupAllDataDict = cache.SearchService.GetGroupData<Subscriber>(groupName);
             if (logAllData)
             {
                 foreach (var (k, v) in groupAllDataDict)
@@ -149,7 +168,7 @@ public class GroupClient : NCache
         }
         catch (Exception exp)
         {
-
+            log.Error("GroupClient: Error in RemoveGroupData", exp);
         }
     }
 }

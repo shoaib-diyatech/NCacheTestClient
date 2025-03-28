@@ -34,7 +34,38 @@ public class CacheThrough : NCache
         var readThruOptions = new ReadThruOptions();
         readThruOptions.Mode = ReadMode.ReadThru;
 
-        value = cache.Get<string>(key, readThruOptions);
+        var sub = cache.Get<Subscriber>(key, readThruOptions);
+        log.Debug($"Value for the key {key} through ReadThru is [{sub}]");
+        if (sub != null)
+        {
+            log.Debug("ReadThru test successful");
+        }
+        else
+        {
+            log.Error("ReadThru test failed");
+        }
+    }
+
+    public void TestReadThruBulk()
+    {
+        log.Debug("Initiating TestReadThruBulk method in CacheThrough");
+        // Geting keys which do not exist in the cache
+        string[] keys = new string[5];
+        for (int i = 0; i < 5; i++)
+        {
+            keys[i] = new Random().Next(100000001, 999999999).ToString();
+        }
+        string key = new Random().Next(100000001, 999999999).ToString();
+        log.Debug($"Getting the value for the key {key} which does not exist in the cache");
+        string value = cache.Get<string>(key);
+        log.Debug($"Value for the key {key} is [{value}]");
+        // Now getting the key through ReadThru
+        log.Debug($"Getting the value for the key {key} through ReadThru");
+        // Specify the readThruOptions for Read-through operations
+        var readThruOptions = new ReadThruOptions();
+        readThruOptions.Mode = ReadMode.ReadThru;
+
+        value = cache.GetBulk<string>(keys, readThruOptions).Values.FirstOrDefault();
         log.Debug($"Value for the key {key} through ReadThru is [{value}]");
         if (value != null)
         {
