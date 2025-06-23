@@ -7,6 +7,8 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 using NCacheClient;
+using Alachisoft.NCache.Client;
+using Alachisoft.NCache.Runtime.CacheManagement;
 
 // Initialize log4net
 #region log4net
@@ -60,9 +62,9 @@ int port = 9080;// int.Parse(serverPort);
 List<string> serverIps = new List<string> {
     // "20.200.20.32" 
     //, 
-     "20.200.20.42"
+    //  "20.200.20.42"
     //, 
-    // "20.200.20.103"
+    "20.200.20.103"
     };
 port = 9800;
 
@@ -74,26 +76,33 @@ Console.WriteLine($"serverIps: [{string.Join(", ", serverIps)}]");
 //Console.WriteLine($"serverPort: [{serverPort}]");
 
 // string CacheName = "RemoteMirror";
- string CacheName = "SKOnly"; // "InProcCache";
+string CacheName = "demoCache"; //"HomePart";// "SNCache"; // "InProcCache";
 //string CacheName = "TestMirror2";
 
 Console.WriteLine($"Cache: [{CacheName}]");
 
-// NCache nCacheEventClient = new EventClient(serverIps, port, CacheName); // Just registering the events
+Alachisoft.NCache.Runtime.CacheManagement.CacheHealth cacheHealth = CacheManager.GetCacheHealth("HomePart");
+Console.WriteLine($"Cache Health: cacheHealth.ServerNodesStatus: [{cacheHealth.ServerNodesStatus}], cacheHealth.Status: [{cacheHealth.Status}]");
+
+
+//NCache nCacheClient = new EventClient(serverIps, port, CacheName); // Just registering the events
 // NCache nCacheClient = new BulkClient(serverIps, port, CacheName)
 // NCache nCacheClient = new PubSubClient(serverIps, port, CacheName);
 // NCache nCacheClient = new PartitionClient(serverIps, port, CacheName);
 // NCache nCacheClient = new LockingClient(serverIps, port, CacheName);
 //  NCache nCacheClient = new GroupClient(serverIps, port, CacheName);
 //  NCache nCacheClient = new TagClient(serverIps, port, CacheName);
-NCache nCacheClient = new DependencyClient(serverIps, port, CacheName);
-// CacheThrough nCacheClient = new CacheThrough(serverIps, port, CacheName);
+// NCache nCacheClient = new DependencyClient(serverIps, port, CacheName);
+CacheThrough nCacheClient = new CacheThrough(serverIps, port, CacheName);
 // NCache nCacheClient = new InProcClient(CacheName);
 // NCache nCacheClient = new AsyncClient(serverIps, port, CacheName);
+//NCache nCacheClient = new DependencyClientOleDbPolling(serverIps, port, CacheName);
 
 nCacheClient.Initialize();
 nCacheClient.Test();
 Console.ReadLine();
+
+//ICache cache = CacheManager.GetCache("democache");
 
 // CacheLoaderTest cacheLoaderTest = new CacheLoaderTest();
 // cacheLoaderTest.Test();

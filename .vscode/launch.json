@@ -5,6 +5,17 @@
     "version": "0.2.0",
     "configurations": [
         
+        {
+            "name": ".NET Core Launch (NCacheTestClient)",
+            "type": "coreclr",
+            "request": "launch",
+            "preLaunchTask": "build",
+            "program": "${workspaceFolder}/bin/Debug/net6.0/NCacheTestClient.dll", // Adjust the path based on your target framework
+            "args": [],
+            "cwd": "${workspaceFolder}",
+            "stopAtEntry": false,
+            "console": "internalConsole"
+          }
 
 
 

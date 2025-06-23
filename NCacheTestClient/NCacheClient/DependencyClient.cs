@@ -169,6 +169,8 @@ public class DependencyClient : NCache
             FileDependency fileDependency = new FileDependency(filePath);
             // Create a cache item with the value and the file dependency
             CacheItem cacheItem = new CacheItem(value) { Dependency = fileDependency };
+            
+            cacheItem.SetCacheDataNotification(CacheDataNotificationCallback, EventType.ItemRemoved, EventDataFilter.DataWithMetadata);
             // Add the item to the cache
             cache.Add(key, cacheItem);
             log.Debug($"Added item with file dependency: {key}");
@@ -177,6 +179,11 @@ public class DependencyClient : NCache
         {
             log.Error($"Error adding item with file dependency: {ex.Message}");
         }
+    }
+
+    public void CacheDataNotificationCallback(string key, CacheEventArg cacheEventArgs)
+    {
+        log.Debug($"{key} is {cacheEventArgs.EventType}ed due to {cacheEventArgs.CacheItemRemovedReason}");
     }
 
 }

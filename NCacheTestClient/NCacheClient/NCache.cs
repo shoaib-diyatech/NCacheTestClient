@@ -89,6 +89,10 @@ public abstract class NCache
     }
     abstract public void Test();
 
+    /// <summary>
+    /// Adds a key-value pair to the cache.
+    /// If the key already exists, it will throw an exception.
+    /// </summary>
     public bool Add(string key, string value)
     {
         if (!_isConnected)
@@ -108,6 +112,37 @@ public abstract class NCache
         {
             Console.WriteLine("Error adding to cache: " + e.Message);
             log.Error("Error adding to cache: ", e);
+            return false;
+        }
+        return true;
+    }
+
+    /// <summary>
+    /// Inserts a key-value pair into the cache.
+    /// If the key already exists, it updates the value.
+    /// </summary>
+    /// <param name="key"></param>
+    /// <param name="value"></param>
+    /// <returns></returns>
+    public bool Insert(string key, string value)
+    {
+        if (!_isConnected)
+        {
+            Console.WriteLine("Cache is not connected");
+            return false;
+        }
+        try
+        {
+            cache.Insert(key, value);
+            if (log.IsDebugEnabled)
+            {
+                log.Debug($"Inserted: {key}, Value: {value}");
+            }
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine("Error inserting to cache: " + e.Message);
+            log.Error("Error inserting to cache: ", e);
             return false;
         }
         return true;

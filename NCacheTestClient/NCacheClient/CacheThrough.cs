@@ -1,8 +1,11 @@
+namespace NCacheClient; 
+
 using System.Configuration;
+using System.Text.Json.Nodes;
 using Alachisoft.NCache.Client;
 using Alachisoft.NCache.Runtime.Caching;
+using ServerSide.CacheThrough;
 
-namespace NCacheClient;
 
 public class CacheThrough : NCache
 {
@@ -15,9 +18,64 @@ public class CacheThrough : NCache
     }
     public override void Test()
     {
-        TestReadThru();
-        TestForceReadThru();
-        TestWriteThru();
+        Alachisoft.NCache.Runtime.CacheManagement.CacheHealth cacheHealth = CacheManager.GetCacheHealth("HomePart");
+        cache.Clear();
+        string key = "1000";
+        //TestReadThru(key);
+        TestReadThru("JsonString");
+        TestReadThru("SystemJsonObject");
+        TestReadThru("AlachisoftJsonObject");
+        TestReadThru("CustomObject");
+        //TestReadThru("TESTRESYNCONEXPIRATION");
+        //TestForceReadThru();
+        //TestWriteThru();
+    }
+
+    public void TestReadThru(string key)
+    {
+        try
+        {
+            log.Debug($"Getting the value for the key {key} which does not exist in the cache");
+            var value = cache.Get<object>(key);
+            log.Debug($"Value for the key {key} is [{value}]");
+            // Now getting the key through ReadThru
+            log.Debug($"Getting the value for the key {key} through ReadThru");
+            // Specify the readThruOptions for Read-through operations
+            var readThruOptions = new ReadThruOptions();
+            readThruOptions.Mode = ReadMode.ReadThru;
+
+            Product prod = null;
+            if (key == "JsonString")
+            {
+                var prodJson = cache.Get<string>(key, readThruOptions);
+                prod = Product.Parse(prodJson);
+            }
+            else if(key == "CustomObject")
+            {
+                prod = cache.Get<Product>(key, readThruOptions);
+            }
+            else
+            {
+                var prodJson = cache.Get<object>(key, readThruOptions);
+                prod = Product.Parse(prodJson.ToString());
+            }
+            //var prodJson = cache.Get<object>(key, readThruOptions);
+
+            if (prod != null)
+            {
+                //prod = Product.Parse(prodJson.ToString());
+                log.Debug($"Value for the key {key} through ReadThru is [{prod.ToString()}]");
+                log.Debug($"ReadThru test SUCCESSFUL for key: {key}");
+            }
+            else
+            {
+                log.Error($"ReadThru test FAILED for key: {key}");
+            }
+        }
+        catch (Exception exp)
+        {
+            log.Error($"Exception: ReadThru test FAILED for key: {key}", exp);
+        }
     }
 
     public void TestReadThru()
@@ -25,25 +83,7 @@ public class CacheThrough : NCache
         log.Debug("Initiating TestReadThru method in CacheThrough");
         // Geting a key which does not exist in the cache
         string key = new Random().Next(100000001, 999999999).ToString();
-        log.Debug($"Getting the value for the key {key} which does not exist in the cache");
-        string value = cache.Get<string>(key);
-        log.Debug($"Value for the key {key} is [{value}]");
-        // Now getting the key through ReadThru
-        log.Debug($"Getting the value for the key {key} through ReadThru");
-        // Specify the readThruOptions for Read-through operations
-        var readThruOptions = new ReadThruOptions();
-        readThruOptions.Mode = ReadMode.ReadThru;
-
-        var sub = cache.Get<Subscriber>(key, readThruOptions);
-        log.Debug($"Value for the key {key} through ReadThru is [{sub}]");
-        if (sub != null)
-        {
-            log.Debug("ReadThru test successful");
-        }
-        else
-        {
-            log.Error("ReadThru test failed");
-        }
+        TestReadThru(key);
     }
 
     public void TestReadThruBulk()
@@ -105,7 +145,8 @@ public class CacheThrough : NCache
         }
     }
 
-    public void TestWriteThru(){
+    public void TestWriteThru()
+    {
         log.Debug("Initiating WriteThru method in CacheThrough");
         // Specifing the key of the item
         string key = new Random().Next(100000001, 999999999).ToString();
@@ -132,7 +173,8 @@ public class CacheThrough : NCache
         }
     }
 
-    public void TestWriteBehind(){
+    public void TestWriteBehind()
+    {
         log.Debug("Initiating WriteBehind method in CacheThrough");
         // Specifing the key of the item
         string key = new Random().Next(100000001, 999999999).ToString();
