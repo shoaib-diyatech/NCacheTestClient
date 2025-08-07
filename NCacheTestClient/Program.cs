@@ -9,6 +9,8 @@ using Microsoft.Extensions.Options;
 using NCacheClient;
 using Alachisoft.NCache.Client;
 using Alachisoft.NCache.Runtime.CacheManagement;
+using NCacheTestClient.Util;
+using static System.Net.WebRequestMethods;
 
 // Initialize log4net
 #region log4net
@@ -55,7 +57,7 @@ var serviceProvider = services.BuildServiceProvider();
 //var nCacheServerSettings = serviceProvider.GetService<IOptions<NCacheServerSettings>>().Value;
 #endregion
 
-int port = 9080;// int.Parse(serverPort);
+int port;// = 9080;// int.Parse(serverPort);
 
 
 // List<string> serverIps = new List<string> { serverIp1, serverIp2, serverIp3 };
@@ -68,6 +70,11 @@ List<string> serverIps = new List<string> {
     };
 port = 9800;
 
+List<string> serverIps2 = new List<string>{
+    //"20.200.20.24" // Ayesha's PC
+    "20.200.20.103"
+    };
+
 Console.WriteLine("Current directory: " + Directory.GetCurrentDirectory());
 //Console.WriteLine($"SomeSetting: [{someSetting}]");
 //Console.WriteLine($"NCache Server IP: {nCacheServerSettings.ServerIP}");
@@ -77,12 +84,14 @@ Console.WriteLine($"serverIps: [{string.Join(", ", serverIps)}]");
 
 // string CacheName = "RemoteMirror";
 string CacheName = "demoCache"; //"HomePart";// "SNCache"; // "InProcCache";
+string CacheName2 = "demoCache2";
 //string CacheName = "TestMirror2";
 
-Console.WriteLine($"Cache: [{CacheName}]");
+Console.WriteLine($"Cache1: [{CacheName}]");
+Console.WriteLine($"Cache2: [{CacheName2}]");
 
-Alachisoft.NCache.Runtime.CacheManagement.CacheHealth cacheHealth = CacheManager.GetCacheHealth("HomePart");
-Console.WriteLine($"Cache Health: cacheHealth.ServerNodesStatus: [{cacheHealth.ServerNodesStatus}], cacheHealth.Status: [{cacheHealth.Status}]");
+//Alachisoft.NCache.Runtime.CacheManagement.CacheHealth cacheHealth = CacheManager.GetCacheHealth(CacheName);
+//Console.WriteLine($"Cache Health: cacheHealth.ServerNodesStatus: [{cacheHealth.ServerNodesStatus}], cacheHealth.Status: [{cacheHealth.Status}]");
 
 
 //NCache nCacheClient = new EventClient(serverIps, port, CacheName); // Just registering the events
@@ -93,13 +102,21 @@ Console.WriteLine($"Cache Health: cacheHealth.ServerNodesStatus: [{cacheHealth.S
 //  NCache nCacheClient = new GroupClient(serverIps, port, CacheName);
 //  NCache nCacheClient = new TagClient(serverIps, port, CacheName);
 // NCache nCacheClient = new DependencyClient(serverIps, port, CacheName);
-CacheThrough nCacheClient = new CacheThrough(serverIps, port, CacheName);
+// CacheThrough nCacheClient = new CacheThrough(serverIps, port, CacheName);
 // NCache nCacheClient = new InProcClient(CacheName);
 // NCache nCacheClient = new AsyncClient(serverIps, port, CacheName);
 //NCache nCacheClient = new DependencyClientOleDbPolling(serverIps, port, CacheName);
+ //NCache nCacheClient = new SimpleClient(serverIps, port, CacheName);
+ NCache nCacheClient = new SimpleClient(serverIps, port, CacheName);
+ NCache nCacheClient2 = new SimpleClient(serverIps2, port, CacheName2);
 
 nCacheClient.Initialize();
-nCacheClient.Test();
+nCacheClient2.Initialize();
+((SimpleClient)nCacheClient).PopulateRandom(10);
+((SimpleClient)nCacheClient2).PopulateRandom(10);
+Console.ReadLine();
+//(((SimpleClient)nCacheClient).GetCacheObj()).Remove("5")
+CacheDataComparer.CompareAndReportCacheDifferences(((SimpleClient)nCacheClient).GetCacheObj(), ((SimpleClient)nCacheClient2).GetCacheObj());
 Console.ReadLine();
 
 //ICache cache = CacheManager.GetCache("democache");

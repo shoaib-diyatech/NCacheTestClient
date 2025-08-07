@@ -165,6 +165,22 @@ public abstract class NCache
         }
     }
 
+    protected CacheItemVersion InsertCacheItem(string key, object value)
+    {
+        try
+        {
+            CacheItem cacheItem = new CacheItem(value);
+            CacheItemVersion cacheItemVersion = cache.Insert(key, cacheItem);
+            log.Debug($"Inserted, key: [{key}], value: [{value}], to cache: {_cacheName}");
+            return cacheItemVersion;
+        }
+        catch (Exception ex)
+        {
+            // Handle exceptions
+            log.Error($"Error inserting item to cache: {ex.Message}");
+            return null;
+        }
+    }
     public void Add(string key, object value, int ttlInSecs)
     {
         try
@@ -221,7 +237,7 @@ public abstract class NCache
         {
             if (cache.Remove<string>(key, out var valueRemoved))
             {
-                log.Debug($"Item removed: {valueRemoved}");
+                log.Debug($"Item removed: {valueRemoved}, against key: {key}");
                 return valueRemoved;
             }
             else

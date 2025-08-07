@@ -205,22 +205,22 @@ public class PubSubClient : NCache
         string query = "SELECT $VALUE$ FROM NCacheClient.Subscriber WHERE Age > ?";
 
         var queryCommand = new QueryCommand(query);
-        queryCommand.Parameters.Add("Country", "USA");
+        //queryCommand.Parameters.Add("Country", "USA");
 
-        // Create Continuous Query
-        var cQuery = new ContinuousQuery(queryCommand);
+        //// Create Continuous Query
+        //var cQuery = new ContinuousQuery(queryCommand);
 
-        // Register to be notified when a qualified item is added to the cache
-        cQuery.RegisterNotification(new QueryDataNotificationCallback(QueryItemCallBack), EventType.ItemAdded | EventType.ItemUpdated | EventType.ItemRemoved, EventDataFilter.None);
+        //// Register to be notified when a qualified item is added to the cache
+        //cQuery.RegisterNotification(new QueryDataNotificationCallback(QueryItemCallBack), EventType.ItemAdded | EventType.ItemUpdated | EventType.ItemRemoved, EventDataFilter.None);
 
-        // Register continuousQuery on server 
-        cache.MessagingService.RegisterCQ(cQuery);
+        //// Register continuousQuery on server 
+        //cache.MessagingService.RegisterCQ(cQuery);
     }
 
-    private void QueryItemCallBack(string key, CQEventArg arg)
-    {
-        log.Debug($"QueryItemCallBack: key: [{key}], EventType: [{arg.EventType}]");
-    }
+    //private void QueryItemCallBack(string key, CQEventArg arg)
+    //{
+    //    log.Debug($"QueryItemCallBack: key: [{key}], EventType: [{arg.EventType}]");
+    //}
 
     public void MessageReceived(object sender, MessageEventArgs args)
     {
