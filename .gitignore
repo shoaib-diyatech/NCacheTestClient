@@ -1,0 +1,6 @@
+*.mpack
+*.db
+*.db-shm
+*.db-wal
+*.vsidx
+*.json
